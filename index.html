@@ -1,0 +1,110 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Al Jazeera Kabab Restaurant</title>
+<style>
+:root{--bg:#fff8ee;--cd:#fff;--tx:#2a1a0c;--mu:#7a6650;--ac:#c8321e;--bd:#ead9bf}
+@media(prefers-color-scheme:dark){:root{--bg:#1b1410;--cd:#2a201a;--tx:#f5e9d8;--mu:#b9a68c;--ac:#ef6a54;--bd:#4a3a2e}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font-family:system-ui,sans-serif;max-width:680px;margin:auto;padding:0 12px 100px}
+header{text-align:center;padding:14px 0 6px}h1{margin:0;font-size:22px}h2{font-size:15px;color:var(--ac);margin:18px 0 6px}
+.mu{color:var(--mu);font-size:13px}.row{display:flex;justify-content:space-between;align-items:center;gap:8px;background:var(--cd);border:1px solid var(--bd);border-radius:10px;padding:9px 11px;margin:6px 0}
+button,select,input,textarea{font:inherit;color:inherit}button{border:0;border-radius:8px;background:var(--ac);color:#fff;padding:8px 12px;cursor:pointer}button.g{background:transparent;color:var(--tx);border:1px solid var(--bd)}
+input,textarea,select{background:var(--cd);border:1px solid var(--bd);border-radius:8px;padding:8px;width:100%;margin:3px 0}
+.q{display:flex;align-items:center;gap:8px}.q button{padding:2px 11px;font-size:18px}.tabs{display:flex;gap:6px;margin:8px 0}.tabs button{flex:1}
+.bar{position:fixed;left:0;right:0;bottom:0;max-width:680px;margin:auto;background:var(--cd);border-top:1px solid var(--bd);padding:10px 14px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.st{padding:3px 9px;border-radius:99px;font-size:12px;background:var(--bd)}.off{opacity:.45}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;max-width:260px;margin:10px auto}.cell{aspect-ratio:1;font-size:34px;background:var(--cd);color:var(--tx);border:1px solid var(--bd)}
+.sl{display:grid;grid-template-columns:repeat(10,1fr);gap:1px;margin:8px 0}.sc{aspect-ratio:1;background:var(--cd);border:1px solid var(--bd);font-size:9px;position:relative;line-height:1}
+.sc i{position:absolute;right:1px;bottom:1px;font-style:normal;font-size:8px;color:var(--ac)}.sc u{text-decoration:none;position:absolute;left:1px;bottom:0;font-size:11px}
+.l{background:#2e7d3226}.s{background:#c8321e26}footer{text-align:center;margin-top:24px}
+</style></head><body>
+<header><h1>🍖 Al Jazeera Kabab Restaurant</h1><div class="mu">Opposite Qatar National Museum, Old Salata, Doha, Qatar</div>
+<div class="mu">📞 <a href="tel:44433440">4443 3440</a> · WhatsApp <a href="https://wa.me/97433225502">3322 5502</a> / <a href="https://wa.me/97455306046">5530 6046</a> · Instagram kabab_aljazera</div></header>
+<div id="view"></div>
+<div id="cm" style="display:none"><h2>Comments</h2><input id="cn" maxlength="40" placeholder="Your name"><textarea id="ct" maxlength="300" rows="2" placeholder="Write a comment…"></textarea><button id="cs">Post comment</button><div id="cl"></div></div>
+<footer class="mu">Mobile barbecue service for homes, gardens and parties · Prices in QR</footer>
+<script type="module">
+/* ====== EDIT THESE TWO THINGS ====== */
+const firebaseConfig={apiKey:"AIzaSyA3P55GoDtYr5J0KgNA5TSWFjVF8rwgtx0",authDomain:"al-jazeera-kabab.firebaseapp.com",projectId:"al-jazeera-kabab",storageBucket:"al-jazeera-kabab.firebasestorage.app",messagingSenderId:"1003995542749",appId:"1:1003995542749:web:ffa6c3ca90ca7886951734"};
+const ADMIN_EMAIL="Jaahangir34@gmail.com";
+/* =================================== */
+import{initializeApp}from"https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import{getFirestore,collection,addDoc,doc,setDoc,updateDoc,deleteDoc,onSnapshot,query,orderBy,writeBatch}from"https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import{getAuth,signInWithEmailAndPassword,onAuthStateChanged,signOut}from"https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+const app=initializeApp(firebaseConfig),db=getFirestore(app),auth=getAuth(app);
+const $=s=>document.querySelector(s),V=$("#view"),P=new URLSearchParams(location.search),ADMIN=P.has("admin");
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+let menu=[],orders=[],comments=[],cart={},tab="menu",myId=localStorage.getItem("myOrder"),myOrder=null,table=+P.get("t")||0,pane="orders",user=null,first=true;
+const CATS=["Grills – Full Set","Grills – S Meal","Mix Grill & Rice","Chicken BBQ","Rice & Sandwiches","Skewers","Sides & Sauces","Drinks"];
+const STL={new:"Received",accepted:"Being prepared",done:"Ready"};
+/* starter menu (from printed menu) */
+const G=[["Mutton Kofta",34,26],["Chicken Kofta",30,22],["Mutton Tikka",34,26],["Chicken Tikka",30,22],["Chicken Tikka Yoghurt",30,22],["Lamb Chops Grill (4 pcs)",50,42],["Liver, Heart, Kidney Grill",34,26],["Quail Grill (3 pcs)",40,32],["Chicken Wings Grill",30,22],["Mix Grill (250g)",32,24]];
+const SEED=[...G.map(g=>[g[0]+" – Full Set",g[1],CATS[0]]),...G.map(g=>[g[0]+" – S Meal",g[2],CATS[1]]),
+["Mix Grill (500g)",64,CATS[2]],["Mix Grill (1kg)",125,CATS[2]],["Mix Grill with Rice (500g)",70,CATS[2]],["Mix Grill with Rice (1kg)",140,CATS[2]],["Mix Grill Rice – Saffron (S)",20,CATS[2]],["Mix Grill Rice – Saffron (M)",31,CATS[2]],["Mix Grill Rice – Biryani (S)",17,CATS[2]],["Mix Grill Rice – Biryani (M)",28,CATS[2]],
+["Chicken BBQ (Half)",18,CATS[3]],["Chicken BBQ (Full)",36,CATS[3]],["Chicken BBQ with Saffron Rice (Half)",24,CATS[3]],["Chicken BBQ with Saffron Rice (Full)",48,CATS[3]],["Chicken BBQ with Biryani (Half)",21,CATS[3]],["Chicken BBQ with Biryani (Full)",42,CATS[3]],
+["Grill Chicken Biryani",14,CATS[4]],["Saffron Rice",10,CATS[4]],["Biryani Rice / White Rice",7,CATS[4]],["Iranian Bread",1,CATS[4]],["Kebab Sandwich – Chicken (S)",7,CATS[4]],["Kebab Sandwich – Chicken (M)",12,CATS[4]],["Kebab Sandwich – Meat (S)",8,CATS[4]],["Kebab Sandwich – Meat (M)",14,CATS[4]],
+["Chicken Skewer",5,CATS[5]],["Meat Skewer",6,CATS[5]],["Chicken Wings Grill Skewer",10,CATS[5]],["Quail Grill (1 pc)",10,CATS[5]],["Lamb Chops (1 pc)",10,CATS[5]],["Grill Chilli Skewer",2,CATS[5]],
+["French Fries (Small)",7,CATS[6]],["French Fries (Large)",12,CATS[6]],["Salad Shirazi",5,CATS[6]],["Mix Salad",5,CATS[6]],["Vegetable Soup",4,CATS[6]],["Hummus",7,CATS[6]],["Eruca",2,CATS[6]],["Yoghurt Cucumber",5,CATS[6]],["Yoghurt",2,CATS[6]],["Grilled Onion & Tomato",6,CATS[6]],["Olive",5,CATS[6]],["Pickled Vegetables",3,CATS[6]],["Garlic Sauce",1,CATS[6]],["Green Sauce",1,CATS[6]],["Tahini Sauce",1,CATS[6]],["Red Sauce",1,CATS[6]],
+["Mango Milk Shake",7,CATS[7]],["Al Jazeera Sp. Laban",5,CATS[7]],["Iranian Tea (S)",2,CATS[7]],["Iranian Tea (M)",4,CATS[7]],["Milk Tea Karak (S)",1,CATS[7]],["Milk Tea Karak (M)",2,CATS[7]],["Soft Drink (250ml)",3,CATS[7]],["Soft Drink (330ml)",4,CATS[7]],["Water",2,CATS[7]]];
+const sortM=a=>[...a].sort((x,y)=>(CATS.indexOf(x.cat)+99)%99-(CATS.indexOf(y.cat)+99)%99||x.name.localeCompare(y.name));
+const err=e=>{console.error(e);alert("Something went wrong: "+(e.code||e.message))};
+onSnapshot(collection(db,"menu"),s=>{menu=s.docs.map(d=>({id:d.id,...d.data()}));render()},err);
+onSnapshot(query(collection(db,"comments"),orderBy("ts","desc")),s=>{comments=s.docs.map(d=>({id:d.id,...d.data()}));fillC()},()=>{});
+if(ADMIN){onAuthStateChanged(auth,u=>{user=u;if(u&&u.email===ADMIN_EMAIL)onSnapshot(query(collection(db,"orders"),orderBy("ts","desc")),s=>{if(!first&&s.docChanges().some(c=>c.type==="added"))beep();first=false;orders=s.docs.map(d=>({id:d.id,...d.data()}));fillA()},err);render()})}
+else if(myId)onSnapshot(doc(db,"orders",myId),s=>{myOrder=s.exists()?s.data():null;render()},()=>{});
+function beep(){try{const c=new AudioContext(),o=c.createOscillator();o.connect(c.destination);o.frequency.value=880;o.start();o.stop(c.currentTime+.4)}catch(e){}}
+const cnt=()=>Object.values(cart).reduce((a,i)=>a+i.q,0),tot=()=>Object.values(cart).reduce((a,i)=>a+i.q*i.p,0);
+function render(){document.title=ADMIN?"Admin – Al Jazeera":"Al Jazeera Kabab Restaurant";$("#cm").style.display=!ADMIN&&tab==="menu"?"block":"none";ADMIN?admin():customer()}
+function customer(){let h=`<div class="mu" style="text-align:center">${table?"Table "+table:""}</div><div class="tabs">${[["menu","Menu"],["status","My Order"],["game","🎮 Games"]].map(([k,l])=>`<button class="${tab==k?"":"g"}" data-tab="${k}">${l}</button>`).join("")}</div>`;
+ if(tab==="menu"){if(!menu.length)h+=`<p class="mu">Menu is loading…</p>`;let last="";sortM(menu).forEach(m=>{if(m.cat!==last){h+=`<h2>${esc(m.cat)}</h2>`;last=m.cat}const q=cart[m.id]?.q||0;
+  h+=`<div class="row ${m.avail===false?"off":""}"><div><b>${esc(m.name)}</b><div class="mu">${m.price} QR${m.avail===false?" · Sold out":""}</div></div>${m.avail===false?"":`<div class="q">${q?`<button class="g" data-minus="${m.id}">−</button><span>${q}</span>`:""}<button data-plus="${m.id}">+</button></div>`}</div>`});
+  if(cnt())h+=`<div class="bar"><div><b>${cnt()} items · ${tot()} QR</b>${table?"":`<select id="tb"><option value="">Table…</option>${[1,2,3,4,5,6,7,8].map(n=>`<option>${n}</option>`).join("")}</select>`}<input id="nt" maxlength="120" placeholder="Note (optional)"></div><button id="send">Send order</button></div>`}
+ if(tab==="status")h+=myOrder?`<div class="row"><div><b>Your order</b><div class="mu">${myOrder.items.map(i=>esc(i.n)+" ×"+i.q).join(", ")}</div><div>Total ${myOrder.total} QR</div></div><div style="text-align:right"><span class="st">${STL[myOrder.status]}</span><div style="margin-top:6px">${myOrder.eta?`<b>⏱ about ${myOrder.eta} min</b>`:`<span class="mu">Waiting for kitchen…</span>`}</div></div></div>`:`<p class="mu">No order yet.</p>`;
+ if(tab==="game")h+=`<div class="tabs"><button class="${game=="ttt"?"":"g"}" data-game="ttt">Tic-Tac-Toe</button><button class="${game=="snk"?"":"g"}" data-game="snk">Snakes &amp; Ladders</button></div>`+(game=="ttt"?tttH():snkH());
+ V.innerHTML=h}
+function fillC(){$("#cl").innerHTML=comments.map(c=>`<div class="row"><div><b>${esc(c.name)}</b><div>${esc(c.text)}</div></div>${ADMIN?`<button class="g" data-delc="${c.id}">Delete</button>`:""}</div>`).join("")}
+/* ===== admin ===== */
+function admin(){if(!user||user.email!==ADMIN_EMAIL){V.innerHTML=`<h2>Admin login</h2><input id="ae" type="email" placeholder="Email" value="${esc(user?.email||"")}"><input id="ap" type="password" placeholder="Password"><button id="login">Log in</button>${user?`<p class="mu">This account is not the admin.</p>`:""}`;return}
+ V.innerHTML=`<div class="tabs">${["orders","menu","comments"].map(k=>`<button class="${pane==k?"":"g"}" data-pane="${k}">${k[0].toUpperCase()+k.slice(1)}</button>`).join("")}<button class="g" id="logout">Log out</button></div>`+(pane=="menu"?`<div class="row" style="display:block"><b>Add item</b><input id="mn" placeholder="Name"><input id="mp" type="number" placeholder="Price (QR)"><input id="mc" list="cl2" placeholder="Category"><datalist id="cl2">${[...new Set([...CATS,...menu.map(m=>m.cat)])].map(c=>`<option value="${esc(c)}">`).join("")}</datalist><button id="addm">Add</button> ${menu.length?"":`<button class="g" id="seed">Load starter menu</button>`}</div>`:"")+`<div id="ap2"></div>`;fillA()}
+function fillA(){const e=$("#ap2");if(!e||!user||user.email!==ADMIN_EMAIL)return;let h="";
+ if(pane=="orders"){if(!orders.length)h=`<p class="mu">No orders yet.</p>`;orders.forEach(o=>{h+=`<div class="row" style="display:block"><div style="display:flex;justify-content:space-between"><b>Table ${esc(o.table)} · ${new Date(o.ts).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}</b><span class="st">${STL[o.status]}</span></div><div>${o.items.map(i=>esc(i.n)+" ×"+i.q).join("<br>")}</div>${o.note?`<div class="mu">Note: ${esc(o.note)}</div>`:""}<div class="mu">Total ${o.total} QR${o.eta?" · "+o.eta+" min":""}</div><div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">${o.status=="new"?[10,15,20,25].map(m=>`<button data-eta="${o.id}|${m}">${m} min</button>`).join(""):""}${o.status=="accepted"?`<button data-done="${o.id}">Ready ✔</button>`:""}<button class="g" data-delo="${o.id}">Delete</button></div></div>`})}
+ if(pane=="menu")sortM(menu).forEach(m=>{h+=`<div class="row" style="display:block"><input data-f="name" data-id="${m.id}" value="${esc(m.name)}"><div style="display:flex;gap:6px"><input data-f="price" data-id="${m.id}" type="number" value="${m.price}"><input data-f="cat" data-id="${m.id}" value="${esc(m.cat)}"></div><label><input type="checkbox" style="width:auto" data-f="avail" data-id="${m.id}" ${m.avail===false?"":"checked"}> Available</label> <button class="g" data-delm="${m.id}">Delete</button></div>`});
+ if(pane=="comments")h=comments.map(c=>`<div class="row"><div><b>${esc(c.name)}</b><div>${esc(c.text)}</div></div><button class="g" data-delc="${c.id}">Delete</button></div>`).join("")||`<p class="mu">No comments.</p>`;
+ e.innerHTML=h}
+/* ===== events ===== */
+document.addEventListener("click",async e=>{const t=e.target,d=t.dataset||{};try{
+ if(d.tab){tab=d.tab;render()}else if(d.game){game=d.game;render()}
+ else if(d.plus){const m=menu.find(x=>x.id==d.plus);cart[m.id]=cart[m.id]||{n:m.name,p:m.price,q:0};cart[m.id].q++;render()}
+ else if(d.minus){if(--cart[d.minus].q<=0)delete cart[d.minus];render()}
+ else if(t.id==="send"){const tb=table||+$("#tb")?.value;if(!tb)return alert("Please choose your table number");t.disabled=true;
+  const r=await addDoc(collection(db,"orders"),{table:tb,items:Object.values(cart),total:tot(),note:$("#nt").value.trim(),status:"new",eta:0,ts:Date.now()});myId=r.id;localStorage.setItem("myOrder",myId);cart={};tab="status";
+  onSnapshot(doc(db,"orders",myId),s=>{myOrder=s.exists()?s.data():null;render()});render()}
+ else if(t.id==="cs"){const n=$("#cn").value.trim(),x=$("#ct").value.trim();if(!n||!x)return;await addDoc(collection(db,"comments"),{name:n,text:x,ts:Date.now()});$("#ct").value=""}
+ else if(t.id==="login"){await signInWithEmailAndPassword(auth,$("#ae").value,$("#ap").value)}
+ else if(t.id==="logout")signOut(auth);
+ else if(d.pane){pane=d.pane;admin()}
+ else if(d.eta){const[i,m]=d.eta.split("|");await updateDoc(doc(db,"orders",i),{eta:+m,status:"accepted"})}
+ else if(d.done)await updateDoc(doc(db,"orders",d.done),{status:"done"});
+ else if(d.delo&&confirm("Delete order?"))await deleteDoc(doc(db,"orders",d.delo));
+ else if(d.delm&&confirm("Delete item?"))await deleteDoc(doc(db,"menu",d.delm));
+ else if(d.delc&&confirm("Delete comment?"))await deleteDoc(doc(db,"comments",d.delc));
+ else if(t.id==="addm"){const n=$("#mn").value.trim(),p=+$("#mp").value,c=$("#mc").value.trim();if(!n||!p||!c)return alert("Fill name, price and category");await addDoc(collection(db,"menu"),{name:n,price:p,cat:c,avail:true});["#mn","#mp","#mc"].forEach(s=>$(s).value="")}
+ else if(t.id==="seed"){const b=writeBatch(db);SEED.forEach(([name,price,cat])=>b.set(doc(collection(db,"menu")),{name,price,cat,avail:true}));await b.commit()}
+ else if(d.c!==undefined)tttMove(+d.c);else if(d.reset)tttReset();else if(t.id==="roll")roll();else if(t.id==="snkreset"){S={p:0,c:0,msg:"Roll the dice!",busy:false};render()}
+}catch(x){err(x)}});
+document.addEventListener("change",async e=>{const d=e.target.dataset;if(!d.f)return;let v=e.target.type==="checkbox"?e.target.checked:e.target.value;if(d.f==="price")v=+v;try{await updateDoc(doc(db,"menu",d.id),{[d.f]:v})}catch(x){err(x)}});
+/* ===== Tic-Tac-Toe ===== */
+let game="ttt",B=Array(9).fill(""),over=false,tmsg="You are ❌, computer is ⭕";const L=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]],win=(b,p)=>L.some(l=>l.every(i=>b[i]==p));
+const tttH=()=>`<p style="text-align:center">${tmsg}</p><div class="grid3">${B.map((v,i)=>`<button class="cell" data-c="${i}">${v}</button>`).join("")}</div><div style="text-align:center"><button data-reset="1">New game</button></div>`;
+function tttReset(){B=Array(9).fill("");over=false;tmsg="You are ❌, computer is ⭕";render()}
+function tttMove(i){if(over||B[i])return;B[i]="❌";if(win(B,"❌")){over=true;tmsg="🎉 You win!";return render()}let f=B.map((v,k)=>v?-1:k).filter(k=>k>=0);if(!f.length){over=true;tmsg="Draw!";return render()}
+ const pk=p=>f.find(k=>{const t=[...B];t[k]=p;return win(t,p)});let k=pk("⭕");if(k===undefined)k=pk("❌");if(k===undefined)k=B[4]?f[Math.random()*f.length|0]:4;B[k]="⭕";
+ if(win(B,"⭕")){over=true;tmsg="Computer wins 😄"}else if(!B.includes("")){over=true;tmsg="Draw!"}render()}
+/* ===== Snakes & Ladders ===== */
+const SN={16:6,47:26,49:11,56:53,62:19,64:60,87:24,93:73,95:75,98:78},LD={1:38,4:14,9:31,21:42,28:84,36:44,51:67,71:91,80:100};
+let S={p:0,c:0,msg:"Roll the dice!",busy:false};
+function snkH(){let g="";for(let r=9;r>=0;r--)for(let c=0;c<10;c++){const n=r*10+(r%2?10-c:c+1);g+=`<div class="sc ${LD[n]?"l":SN[n]?"s":""}">${n}${LD[n]?`<i>↑${LD[n]}</i>`:SN[n]?`<i>↓${SN[n]}</i>`:""}<u>${(S.p==n?"🔵":"")+(S.c==n?"🔴":"")}</u></div>`}
+ return`<p style="text-align:center">${S.msg}<br><span class="mu">🔵 You: ${S.p} · 🔴 Computer: ${S.c}</span></p><div class="sl">${g}</div><div style="text-align:center"><button id="roll" ${S.busy?"disabled":""}>🎲 Roll</button> <button class="g" id="snkreset">New game</button></div>`}
+function step(k){const d=Math.ceil(Math.random()*6);let n=S[k]+d;if(n>100)n=S[k];n=LD[n]||SN[n]||n;S[k]=n;return d}
+function roll(){if(S.busy)return;S.busy=true;const d=step("p");S.msg=`You rolled ${d}`;if(S.p==100){S.msg="🎉 You win!";S.busy=false;return render()}render();
+ setTimeout(()=>{const e=step("c");S.msg=`You rolled ${d}. Computer rolled ${e}.`;if(S.c==100)S.msg="Computer wins 😄";else S.busy=false;render()},800)}
+</script></body></html>

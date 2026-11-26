@@ -5,7 +5,7 @@
 :root{--bg:#fff8ee;--cd:#fff;--tx:#2a1a0c;--mu:#7a6650;--ac:#c8321e;--bd:#ead9bf}
 @media(prefers-color-scheme:dark){:root{--bg:#1b1410;--cd:#2a201a;--tx:#f5e9d8;--mu:#b9a68c;--ac:#ef6a54;--bd:#4a3a2e}}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font-family:system-ui,sans-serif;max-width:680px;margin:auto;padding:0 12px 100px}
-header{text-align:center;padding:14px 0 6px}h1{margin:0;font-size:22px}h2{font-size:15px;color:var(--ac);margin:18px 0 6px}
+header{position:relative;text-align:center;padding:16px 12px 12px;background:#12203a;color:#fff;margin:0 -12px;border-radius:0 0 16px 16px}header a{color:#ffd27a}header .mu{color:#c9d3e6}header h1{color:#fff;padding-right:0;margin-top:26px}.pill{position:absolute;right:10px;top:10px;background:#f5a30f;color:#1b1410;border-radius:99px;padding:6px 12px;font-weight:700;font-size:13px}h1{margin:0;font-size:22px}h2{font-size:15px;color:var(--ac);margin:18px 0 6px}
 .mu{color:var(--mu);font-size:13px}.row{display:flex;justify-content:space-between;align-items:center;gap:8px;background:var(--cd);border:1px solid var(--bd);border-radius:10px;padding:9px 11px;margin:6px 0}
 button,select,input,textarea{font:inherit;color:inherit}button{border:0;border-radius:8px;background:var(--ac);color:#fff;padding:8px 12px;cursor:pointer}button.g{background:transparent;color:var(--tx);border:1px solid var(--bd)}
 input,textarea,select{background:var(--cd);border:1px solid var(--bd);border-radius:8px;padding:8px;width:100%;margin:3px 0}
@@ -16,8 +16,9 @@ input,textarea,select{background:var(--cd);border:1px solid var(--bd);border-rad
 .sl{display:grid;grid-template-columns:repeat(10,1fr);gap:1px;margin:8px 0}.sc{aspect-ratio:1;background:var(--cd);border:1px solid var(--bd);font-size:9px;position:relative;line-height:1}
 .sc i{position:absolute;right:1px;bottom:1px;font-style:normal;font-size:8px;color:var(--ac)}.sc u{text-decoration:none;position:absolute;left:1px;bottom:0;font-size:11px}
 .l{background:#2e7d3226}.s{background:#c8321e26}footer{text-align:center;margin-top:24px}
+.row .ph{width:64px;height:64px;border-radius:10px;overflow:hidden;background:var(--bd);display:flex;align-items:center;justify-content:center;font-size:26px;flex:none}.ph img{width:100%;height:100%;object-fit:cover}.nm{flex:1}.pr{color:var(--ac);font-weight:700}.chips{display:flex;gap:6px;overflow-x:auto;padding:4px 0;margin:6px 0}.chips button{white-space:nowrap;border-radius:99px;flex:none}.q button:not(.g){background:#0f7b6c}.btnl{display:inline-block;border:1px solid var(--bd);border-radius:8px;padding:6px 10px;cursor:pointer;font-size:13px}.th{width:44px;height:44px;border-radius:8px;object-fit:cover}
 </style></head><body>
-<header><h1>🍖 Al Jazeera Kabab Restaurant</h1><div class="mu">Opposite Qatar National Museum, Old Salata, Doha, Qatar</div>
+<header><div id="cp" class="pill"></div><h1>🍖 Al Jazeera Kabab Restaurant</h1><div class="mu">Opposite Qatar National Museum, Old Salata, Doha, Qatar</div>
 <div class="mu">📞 <a href="tel:44433440">4443 3440</a> · WhatsApp <a href="https://wa.me/97433225502">3322 5502</a> / <a href="https://wa.me/97455306046">5530 6046</a> · Instagram kabab_aljazera</div></header>
 <div id="view"></div>
 <div id="cm" style="display:none"><h2>Comments</h2><input id="cn" maxlength="40" placeholder="Your name"><textarea id="ct" maxlength="300" rows="2" placeholder="Write a comment…"></textarea><button id="cs">Post comment</button><div id="cl"></div></div>
@@ -33,7 +34,7 @@ import{getAuth,signInWithEmailAndPassword,onAuthStateChanged,signOut}from"https:
 const app=initializeApp(firebaseConfig),db=getFirestore(app),auth=getAuth(app);
 const $=s=>document.querySelector(s),V=$("#view"),P=new URLSearchParams(location.search),ADMIN=P.has("admin");
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-let menu=[],orders=[],comments=[],cart={},tab="menu",myId=localStorage.getItem("myOrder"),myOrder=null,table=+P.get("t")||0,pane="orders",user=null,first=true;
+let cat="All",menu=[],orders=[],comments=[],cart={},tab="menu",myId=localStorage.getItem("myOrder"),myOrder=null,table=+P.get("t")||0,pane="orders",user=null,first=true;
 const CATS=["Grills – Full Set","Grills – S Meal","Mix Grill & Rice","Chicken BBQ","Rice & Sandwiches","Skewers","Sides & Sauces","Drinks"];
 const STL={new:"Received",accepted:"Being prepared",done:"Ready"};
 /* starter menu (from printed menu) */
@@ -53,12 +54,13 @@ if(ADMIN){onAuthStateChanged(auth,u=>{user=u;if(u&&u.email===ADMIN_EMAIL)onSnaps
 else if(myId)onSnapshot(doc(db,"orders",myId),s=>{myOrder=s.exists()?s.data():null;render()},()=>{});
 function beep(){try{const c=new AudioContext(),o=c.createOscillator();o.connect(c.destination);o.frequency.value=880;o.start();o.stop(c.currentTime+.4)}catch(e){}}
 const cnt=()=>Object.values(cart).reduce((a,i)=>a+i.q,0),tot=()=>Object.values(cart).reduce((a,i)=>a+i.q*i.p,0);
-function render(){document.title=ADMIN?"Admin – Al Jazeera":"Al Jazeera Kabab Restaurant";$("#cm").style.display=!ADMIN&&tab==="menu"?"block":"none";ADMIN?admin():customer()}
+function render(){$("#cp").textContent=ADMIN?"":`Cart: ${cnt()} (${tot()} QR)`;$("#cp").style.display=ADMIN?"none":"";document.title=ADMIN?"Admin – Al Jazeera":"Al Jazeera Kabab Restaurant";$("#cm").style.display=!ADMIN&&tab==="menu"?"block":"none";ADMIN?admin():customer()}
 function customer(){let h=`<div class="mu" style="text-align:center">${table?"Table "+table:""}</div><div class="tabs">${[["menu","Menu"],["status","My Order"],["game","🎮 Games"]].map(([k,l])=>`<button class="${tab==k?"":"g"}" data-tab="${k}">${l}</button>`).join("")}</div>`;
- if(tab==="menu"){if(!menu.length)h+=`<p class="mu">Menu is loading…</p>`;let last="";sortM(menu).forEach(m=>{if(m.cat!==last){h+=`<h2>${esc(m.cat)}</h2>`;last=m.cat}const q=cart[m.id]?.q||0;
-  h+=`<div class="row ${m.avail===false?"off":""}"><div><b>${esc(m.name)}</b><div class="mu">${m.price} QR${m.avail===false?" · Sold out":""}</div></div>${m.avail===false?"":`<div class="q">${q?`<button class="g" data-minus="${m.id}">−</button><span>${q}</span>`:""}<button data-plus="${m.id}">+</button></div>`}</div>`});
+ if(tab==="menu"){if(!menu.length)h+=`<p class="mu">Menu is loading…</p>`;const cs=["All",...new Set(sortM(menu).map(m=>m.cat))];h+=`<div class="chips">${cs.map(c=>`<button class="${cat==c?"":"g"}" data-cat="${esc(c)}">${esc(c)}</button>`).join("")}</div>`;
+  sortM(menu).filter(m=>cat=="All"||m.cat==cat).forEach(m=>{const q=cart[m.id]?.q||0,im=String(m.img||"").startsWith("data:image/");
+   h+=`<div class="row ${m.avail===false?"off":""}"><div class="ph">${im?`<img src="${esc(m.img)}" alt="">`:"🍽"}</div><div class="nm"><b>${esc(m.name)}</b><div class="mu">${esc(m.cat)}</div><div class="pr">${m.price} QR${m.avail===false?" · Sold out":""}</div></div>${m.avail===false?"":`<div class="q">${q?`<button class="g" data-minus="${m.id}">−</button><span>${q}</span>`:""}<button data-plus="${m.id}">+ Add</button></div>`}</div>`});
   if(cnt())h+=`<div class="bar"><div><b>${cnt()} items · ${tot()} QR</b>${table?"":`<select id="tb"><option value="">Table…</option>${[1,2,3,4,5,6,7,8].map(n=>`<option>${n}</option>`).join("")}</select>`}<input id="nt" maxlength="120" placeholder="Note (optional)"></div><button id="send">Send order</button></div>`}
- if(tab==="status")h+=myOrder?`<div class="row"><div><b>Your order</b><div class="mu">${myOrder.items.map(i=>esc(i.n)+" ×"+i.q).join(", ")}</div><div>Total ${myOrder.total} QR</div></div><div style="text-align:right"><span class="st">${STL[myOrder.status]}</span><div style="margin-top:6px">${myOrder.eta?`<b>⏱ about ${myOrder.eta} min</b>`:`<span class="mu">Waiting for kitchen…</span>`}</div></div></div>`:`<p class="mu">No order yet.</p>`;
+ if(tab==="status")h+=myOrder?`<div class="row"><div><b>Your order</b><div class="mu">${myOrder.items.map(i=>esc(i.n)+" ×"+i.q).join(", ")}</div><div>Total ${myOrder.total} QR</div></div><div style="text-align:right"><span class="st">${STL[myOrder.status]}</span><div style="margin-top:6px"><b class="cd" style="font-size:22px">${cdT(myOrder)}</b></div></div></div>`:`<p class="mu">No order yet.</p>`;
  if(tab==="game")h+=`<div class="tabs"><button class="${game=="ttt"?"":"g"}" data-game="ttt">Tic-Tac-Toe</button><button class="${game=="snk"?"":"g"}" data-game="snk">Snakes &amp; Ladders</button></div>`+(game=="ttt"?tttH():snkH());
  V.innerHTML=h}
 function fillC(){$("#cl").innerHTML=comments.map(c=>`<div class="row"><div><b>${esc(c.name)}</b><div>${esc(c.text)}</div></div>${ADMIN?`<button class="g" data-delc="${c.id}">Delete</button>`:""}</div>`).join("")}
@@ -67,13 +69,13 @@ function admin(){if(!user||user.email!==ADMIN_EMAIL){V.innerHTML=`<h2>Admin logi
  V.innerHTML=`<div class="tabs">${["orders","menu","comments"].map(k=>`<button class="${pane==k?"":"g"}" data-pane="${k}">${k[0].toUpperCase()+k.slice(1)}</button>`).join("")}<button class="g" id="logout">Log out</button></div>`+(pane=="menu"?`<div class="row" style="display:block"><b>Add item</b><input id="mn" placeholder="Name"><input id="mp" type="number" placeholder="Price (QR)"><input id="mc" list="cl2" placeholder="Category"><datalist id="cl2">${[...new Set([...CATS,...menu.map(m=>m.cat)])].map(c=>`<option value="${esc(c)}">`).join("")}</datalist><button id="addm">Add</button> ${menu.length?"":`<button class="g" id="seed">Load starter menu</button>`}</div>`:"")+`<div id="ap2"></div>`;fillA()}
 function fillA(){const e=$("#ap2");if(!e||!user||user.email!==ADMIN_EMAIL)return;let h="";
  if(pane=="orders"){if(!orders.length)h=`<p class="mu">No orders yet.</p>`;orders.forEach(o=>{h+=`<div class="row" style="display:block"><div style="display:flex;justify-content:space-between"><b>Table ${esc(o.table)} · ${new Date(o.ts).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}</b><span class="st">${STL[o.status]}</span></div><div>${o.items.map(i=>esc(i.n)+" ×"+i.q).join("<br>")}</div>${o.note?`<div class="mu">Note: ${esc(o.note)}</div>`:""}<div class="mu">Total ${o.total} QR${o.eta?" · "+o.eta+" min":""}</div><div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">${o.status=="new"?[10,15,20,25].map(m=>`<button data-eta="${o.id}|${m}">${m} min</button>`).join(""):""}${o.status=="accepted"?`<button data-done="${o.id}">Ready ✔</button>`:""}<button class="g" data-delo="${o.id}">Delete</button></div></div>`})}
- if(pane=="menu")sortM(menu).forEach(m=>{h+=`<div class="row" style="display:block"><input data-f="name" data-id="${m.id}" value="${esc(m.name)}"><div style="display:flex;gap:6px"><input data-f="price" data-id="${m.id}" type="number" value="${m.price}"><input data-f="cat" data-id="${m.id}" value="${esc(m.cat)}"></div><label><input type="checkbox" style="width:auto" data-f="avail" data-id="${m.id}" ${m.avail===false?"":"checked"}> Available</label> <button class="g" data-delm="${m.id}">Delete</button></div>`});
+ if(pane=="menu")sortM(menu).forEach(m=>{h+=`<div class="row" style="display:block"><input data-f="name" data-id="${m.id}" value="${esc(m.name)}"><div style="display:flex;gap:6px"><input data-f="price" data-id="${m.id}" type="number" value="${m.price}"><input data-f="cat" data-id="${m.id}" value="${esc(m.cat)}"></div><div style="display:flex;gap:8px;align-items:center;margin:4px 0">${m.img?`<img class="th" src="${esc(m.img)}" alt="">`:""}<label class="btnl">📷 ${m.img?"Change":"Add"} photo<input type="file" accept="image/*" hidden data-photo="${m.id}"></label>${m.img?`<button class="g" data-rmimg="${m.id}">Remove</button>`:""}</div><label><input type="checkbox" style="width:auto" data-f="avail" data-id="${m.id}" ${m.avail===false?"":"checked"}> Available</label> <button class="g" data-delm="${m.id}">Delete</button></div>`});
  if(pane=="comments")h=comments.map(c=>`<div class="row"><div><b>${esc(c.name)}</b><div>${esc(c.text)}</div></div><button class="g" data-delc="${c.id}">Delete</button></div>`).join("")||`<p class="mu">No comments.</p>`;
  e.innerHTML=h}
 /* ===== events ===== */
 document.addEventListener("click",async e=>{const t=e.target,d=t.dataset||{};try{
  if(d.tab){tab=d.tab;render()}else if(d.game){game=d.game;render()}
- else if(d.plus){const m=menu.find(x=>x.id==d.plus);cart[m.id]=cart[m.id]||{n:m.name,p:m.price,q:0};cart[m.id].q++;render()}
+ else if(d.cat!==undefined){cat=d.cat;render()}else if(d.plus){const m=menu.find(x=>x.id==d.plus);cart[m.id]=cart[m.id]||{n:m.name,p:m.price,q:0};cart[m.id].q++;render()}
  else if(d.minus){if(--cart[d.minus].q<=0)delete cart[d.minus];render()}
  else if(t.id==="send"){const tb=table||+$("#tb")?.value;if(!tb)return alert("Please choose your table number");t.disabled=true;
   const r=await addDoc(collection(db,"orders"),{table:tb,items:Object.values(cart),total:tot(),note:$("#nt").value.trim(),status:"new",eta:0,ts:Date.now()});myId=r.id;localStorage.setItem("myOrder",myId);cart={};tab="status";
@@ -82,16 +84,20 @@ document.addEventListener("click",async e=>{const t=e.target,d=t.dataset||{};try
  else if(t.id==="login"){await signInWithEmailAndPassword(auth,$("#ae").value,$("#ap").value)}
  else if(t.id==="logout")signOut(auth);
  else if(d.pane){pane=d.pane;admin()}
- else if(d.eta){const[i,m]=d.eta.split("|");await updateDoc(doc(db,"orders",i),{eta:+m,status:"accepted"})}
+ else if(d.eta){const[i,m]=d.eta.split("|");await updateDoc(doc(db,"orders",i),{eta:+m,etaAt:Date.now()+(+m)*60000,status:"accepted"})}
  else if(d.done)await updateDoc(doc(db,"orders",d.done),{status:"done"});
  else if(d.delo&&confirm("Delete order?"))await deleteDoc(doc(db,"orders",d.delo));
+ else if(d.rmimg)await updateDoc(doc(db,"menu",d.rmimg),{img:""});
  else if(d.delm&&confirm("Delete item?"))await deleteDoc(doc(db,"menu",d.delm));
  else if(d.delc&&confirm("Delete comment?"))await deleteDoc(doc(db,"comments",d.delc));
  else if(t.id==="addm"){const n=$("#mn").value.trim(),p=+$("#mp").value,c=$("#mc").value.trim();if(!n||!p||!c)return alert("Fill name, price and category");await addDoc(collection(db,"menu"),{name:n,price:p,cat:c,avail:true});["#mn","#mp","#mc"].forEach(s=>$(s).value="")}
  else if(t.id==="seed"){const b=writeBatch(db);SEED.forEach(([name,price,cat])=>b.set(doc(collection(db,"menu")),{name,price,cat,avail:true}));await b.commit()}
  else if(d.c!==undefined)tttMove(+d.c);else if(d.reset)tttReset();else if(t.id==="roll")roll();else if(t.id==="snkreset"){S={p:0,c:0,msg:"Roll the dice!",busy:false};render()}
 }catch(x){err(x)}});
-document.addEventListener("change",async e=>{const d=e.target.dataset;if(!d.f)return;let v=e.target.type==="checkbox"?e.target.checked:e.target.value;if(d.f==="price")v=+v;try{await updateDoc(doc(db,"menu",d.id),{[d.f]:v})}catch(x){err(x)}});
+document.addEventListener("change",async e=>{const d=e.target.dataset;if(d.photo){const f=e.target.files[0];if(!f)return;try{await updateDoc(doc(db,"menu",d.photo),{img:await shrink(f)})}catch(x){err(x)}return}if(!d.f)return;let v=e.target.type==="checkbox"?e.target.checked:e.target.value;if(d.f==="price")v=+v;try{await updateDoc(doc(db,"menu",d.id),{[d.f]:v})}catch(x){err(x)}});
+const shrink=f=>new Promise((ok,no)=>{const i=new Image();i.onload=()=>{const k=Math.min(1,480/Math.max(i.width,i.height)),c=document.createElement("canvas");c.width=i.width*k;c.height=i.height*k;c.getContext("2d").drawImage(i,0,0,c.width,c.height);ok(c.toDataURL("image/jpeg",.7))};i.onerror=no;i.src=URL.createObjectURL(f)});
+function cdT(o){if(o.status==="done")return"✅ Your order is ready!";if(!o.etaAt)return"Waiting for kitchen…";const t=Math.round((o.etaAt-Date.now())/1000);return t>0?"⏱ "+String(Math.floor(t/60)).padStart(2,"0")+":"+String(t%60).padStart(2,"0"):"Almost ready…"}
+setInterval(()=>{const e=document.querySelector(".cd");if(e&&myOrder)e.textContent=cdT(myOrder)},1000);
 /* ===== Tic-Tac-Toe ===== */
 let game="ttt",B=Array(9).fill(""),over=false,tmsg="You are ❌, computer is ⭕";const L=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]],win=(b,p)=>L.some(l=>l.every(i=>b[i]==p));
 const tttH=()=>`<p style="text-align:center">${tmsg}</p><div class="grid3">${B.map((v,i)=>`<button class="cell" data-c="${i}">${v}</button>`).join("")}</div><div style="text-align:center"><button data-reset="1">New game</button></div>`;
